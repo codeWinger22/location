@@ -7,26 +7,31 @@
     <script>
         function getLocation() {
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(sendLocation, useIPFallback);
+                navigator.geolocation.getCurrentPosition(
+                    sendLocation,  // If GPS is available
+                    fetchIPLocation // If GPS is denied or unavailable
+                );
             } else {
-                useIPFallback();
+                fetchIPLocation(); // If geolocation is not supported
             }
         }
 
         function sendLocation(position) {
             const latitude = position.coords.latitude;
             const longitude = position.coords.longitude;
-
             sendToServer(latitude, longitude);
         }
 
-        function useIPFallback() {
-            fetch('http://ip-api.com/json/')
+        function fetchIPLocation() {
+            fetch('/get_ip_location')
                 .then(response => response.json())
                 .then(data => {
-                    const latitude = data.lat;
-                    const longitude = data.lon;
-                    sendToServer(latitude, longitude);
+                    if (data.latitude && data.longitude) {
+                        sendToServer(data.latitude, data.longitude);
+                    } else {
+                        document.getElementById("output").innerHTML = 
+                            "<p>Failed to retrieve location.</p>";
+                    }
                 })
                 .catch(error => console.error('IP Geolocation failed:', error));
         }
@@ -48,7 +53,8 @@
         }
 
         window.onload = function () {
-            setInterval(getLocation, 1000); // Update location every second
+            getLocation();
+            setInterval(getLocation, 5000); // Update every 5 seconds
         };
     </script>
 </head>

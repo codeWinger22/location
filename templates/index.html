@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Location Tracker</title>
+    <script>
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(sendLocation, useIPFallback);
+            } else {
+                useIPFallback();
+            }
+        }
+
+        function sendLocation(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            sendToServer(latitude, longitude);
+        }
+
+        function useIPFallback() {
+            fetch('http://ip-api.com/json/')
+                .then(response => response.json())
+                .then(data => {
+                    const latitude = data.lat;
+                    const longitude = data.lon;
+                    sendToServer(latitude, longitude);
+                })
+                .catch(error => console.error('IP Geolocation failed:', error));
+        }
+
+        function sendToServer(latitude, longitude) {
+            fetch('/get_location', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ latitude, longitude })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("output").innerHTML = 
+                    `<p>Latitude: ${latitude}</p><p>Longitude: ${longitude}</p>`;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        window.onload = function () {
+            setInterval(getLocation, 1000); // Update location every second
+        };
+    </script>
+</head>
+<body>
+    <h1>Live Location Tracker</h1>
+    <div id="output"></div>
+</body>
+</html>

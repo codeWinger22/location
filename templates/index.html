@@ -6,13 +6,17 @@
     <title>Live Location Tracker</title>
     <script>
         function getLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    sendLocation,  // If GPS is available
-                    fetchIPLocation // If GPS is denied or unavailable
-                );
+            if (navigator.permissions) {
+                navigator.permissions.query({ name: 'geolocation' }).then(permission => {
+                    if (permission.state === "granted") {
+                        navigator.geolocation.getCurrentPosition(sendLocation);
+                    } else {
+                        fetchIPLocation(); // Skip prompt and use IP-based location
+                    }
+                });
             } else {
-                fetchIPLocation(); // If geolocation is not supported
+                // If the browser doesn't support permissions API, default to GPS first
+                navigator.geolocation.getCurrentPosition(sendLocation, fetchIPLocation);
             }
         }
 
@@ -26,12 +30,7 @@
             fetch('/get_ip_location')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.latitude && data.longitude) {
-                        sendToServer(data.latitude, data.longitude);
-                    } else {
-                        document.getElementById("output").innerHTML = 
-                            "<p>Failed to retrieve location.</p>";
-                    }
+                    sendToServer(data.latitude, data.longitude);
                 })
                 .catch(error => console.error('IP Geolocation failed:', error));
         }
@@ -53,7 +52,7 @@
         }
 
         window.onload = function () {
-            getLocation();
+            getLocation(); // Run on page load
             setInterval(getLocation, 5000); // Update every 5 seconds
         };
     </script>
